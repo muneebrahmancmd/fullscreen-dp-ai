@@ -1,0 +1,254 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: access
+    description: User access operations
+  - name: admin
+    description: Administrator-only access management
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /admin/me:
+    get:
+      operationId: getAdminStatus
+      tags: [admin]
+      summary: Check whether the signed-in user is the administrator
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Signed-in user is the administrator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStatus"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      tags: [admin]
+      summary: List registered users and their access status
+      security:
+        - sessionAuth: []
+      responses:
+        "200":
+          description: Registered users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUsersResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /admin/users/{id}/access:
+    post:
+      operationId: updateUserAccess
+      tags: [admin]
+      summary: Grant or revoke access for a registered user
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAccessInput"
+      responses:
+        "200":
+          description: Access updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserAccessResult"
+        "400":
+          description: Invalid action or administrator account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Admin access required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /verify-code:
+    post:
+      operationId: verifyAccessCode
+      tags: [access]
+      summary: Verify the shared app access code
+      security:
+        - sessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccessCodeInput"
+      responses:
+        "200":
+          description: Access code accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessCodeResult"
+        "400":
+          description: Invalid access code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: Access has been revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  securitySchemes:
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    AdminStatus:
+      type: object
+      properties:
+        isAdmin:
+          type: boolean
+      required: [isAdmin]
+    AdminUsersResponse:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminUser"
+      required: [users]
+    AdminUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        picture:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        accessGranted:
+          type: boolean
+        revoked:
+          type: boolean
+        isAdmin:
+          type: boolean
+      required: [id, name, email, picture, createdAt, accessGranted, revoked, isAdmin]
+    UserAccessInput:
+      type: object
+      properties:
+        action:
+          type: string
+          enum: [grant, revoke]
+      required: [action]
+    UserAccessResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+        action:
+          type: string
+          enum: [grant, revoke]
+      required: [success, action]
+    AccessCodeInput:
+      type: object
+      properties:
+        code:
+          type: string
+      required: [code]
+    AccessCodeResult:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+

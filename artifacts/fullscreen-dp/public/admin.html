@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Manage Fullscreen DP AI account access." />
+  <title>Access Admin — Fullscreen DP AI</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root { color-scheme: dark; font-family: 'Syne', sans-serif; background: #080808; color: #f7f7f7; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 50% -20%, #202020 0, #080808 48rem); }
+    a { color: inherit; }
+    .shell { width: min(100% - 32px, 1040px); margin: 0 auto; padding: 28px 0 56px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; border-bottom: 1px solid #252525; padding-bottom: 20px; }
+    .brand { font: 500 11px 'DM Mono', monospace; letter-spacing: .13em; text-transform: uppercase; color: #a4a4a4; }
+    .top-actions { display: flex; align-items: center; gap: 18px; }
+    .top-actions a { color: #bdbdbd; font: 11px 'DM Mono', monospace; text-decoration: none; }
+    .top-actions a:hover { color: #fff; }
+    .intro { padding: 42px 0 26px; }
+    .eyebrow { margin: 0 0 10px; color: #8e8e8e; font: 10px 'DM Mono', monospace; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(30px, 5vw, 48px); line-height: 1; letter-spacing: -.04em; }
+    .intro-copy { max-width: 670px; margin: 14px 0 0; color: #9b9b9b; font-size: 14px; line-height: 1.65; }
+    .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0 0 22px; }
+    .stat { border: 1px solid #242424; background: rgba(255,255,255,.025); border-radius: 12px; padding: 17px 19px; }
+    .stat-label { color: #888; font: 10px 'DM Mono', monospace; letter-spacing: .09em; text-transform: uppercase; }
+    .stat-value { display: block; margin-top: 8px; font-size: 27px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .panel { border: 1px solid #262626; border-radius: 14px; overflow: hidden; background: rgba(12,12,12,.82); }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 18px 20px; border-bottom: 1px solid #242424; }
+    h2 { margin: 0; font-size: 16px; }
+    .search { width: min(100%, 280px); padding: 10px 12px; border: 1px solid #323232; border-radius: 8px; background: #111; color: white; font: 12px 'DM Mono', monospace; outline: none; }
+    .search:focus { border-color: #777; }
+    .table-wrap { overflow-x: auto; }
+    table { border-collapse: collapse; width: 100%; min-width: 680px; text-align: left; }
+    th { color: #777; font: 10px 'DM Mono', monospace; letter-spacing: .1em; text-transform: uppercase; }
+    th, td { padding: 14px 20px; border-bottom: 1px solid #202020; }
+    tr:last-child td { border-bottom: 0; }
+    td { color: #c9c9c9; font-size: 12px; }
+    .person { display: flex; align-items: center; gap: 11px; min-width: 210px; }
+    .avatar { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 34px; border: 1px solid #333; border-radius: 50%; color: #aaa; background: #171717; overflow: hidden; font: 12px 'DM Mono', monospace; }
+    .avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .person-name { color: #f1f1f1; font-weight: 600; }
+    .person-email { margin-top: 4px; color: #777; font: 10px 'DM Mono', monospace; }
+    .status { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+    .status::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #777; }
+    .status.active::before { background: #71d49b; box-shadow: 0 0 10px #71d49b55; }
+    .status.revoked::before { background: #ef7777; }
+    .action { min-width: 112px; border: 1px solid #383838; border-radius: 7px; padding: 8px 11px; background: transparent; color: #e5e5e5; cursor: pointer; font: 10px 'DM Mono', monospace; transition: background .18s, border-color .18s; }
+    .action:hover { border-color: #777; background: #1b1b1b; }
+    .action.grant { border-color: #437759; color: #a8e9c0; }
+    .action.grant:hover { background: #102117; }
+    .admin-label { color: #777; font: 10px 'DM Mono', monospace; }
+    .empty { padding: 34px 20px; text-align: center; color: #777; font: 12px 'DM Mono', monospace; }
+    .notice { display: none; margin: 18px 0 0; padding: 13px 15px; border: 1px solid #5f3939; border-radius: 9px; background: #1b1010; color: #f0aaaa; font: 12px 'DM Mono', monospace; line-height: 1.55; }
+    .notice a { color: #fff; }
+    .toast { position: fixed; right: 20px; bottom: 20px; z-index: 2; max-width: calc(100vw - 40px); padding: 12px 16px; border: 1px solid #3b6347; border-radius: 9px; background: #102117; color: #c4f0d2; font: 11px 'DM Mono', monospace; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s, transform .2s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    @media (max-width: 560px) {
+      .shell { width: min(100% - 22px, 1040px); padding-top: 18px; }
+      .intro { padding-top: 32px; }
+      .intro-copy { font-size: 12px; }
+      .stats { gap: 7px; }
+      .stat { padding: 13px 11px; }
+      .stat-label { font-size: 8px; letter-spacing: .04em; }
+      .stat-value { font-size: 23px; }
+      .panel-head { align-items: flex-start; flex-direction: column; }
+      .search { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <span class="brand">Fullscreen DP AI / Admin</span>
+      <nav class="top-actions" aria-label="Admin navigation">
+        <a href="/">Open app</a>
+        <a href="/api/auth/logout">Log out</a>
+      </nav>
+    </header>
+    <section class="intro">
+      <p class="eyebrow">Account permissions</p>
+      <h1>Access control</h1>
+      <p class="intro-copy">Review registered accounts and manage access. Granting unlocks the app for that account. Revoking blocks future app use and profile updates; a profile update already underway may finish. The shared access code cannot restore a revoked account.</p>
+    </section>
+    <section class="stats" aria-label="User totals">
+      <div class="stat"><span class="stat-label">Registered</span><strong class="stat-value" id="totalCount">—</strong></div>
+      <div class="stat"><span class="stat-label">Access active</span><strong class="stat-value" id="activeCount">—</strong></div>
+      <div class="stat"><span class="stat-label">Needs access</span><strong class="stat-value" id="pendingCount">—</strong></div>
+    </section>
+    <section class="panel" aria-labelledby="usersHeading">
+      <div class="panel-head">
+        <h2 id="usersHeading">Registered users</h2>
+        <input class="search" id="searchInput" type="search" placeholder="Search name or email" aria-label="Search users" />
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">User</th><th scope="col">Joined</th><th scope="col">Access</th><th scope="col">Action</th></tr></thead>
+          <tbody id="usersBody"><tr><td class="empty" colspan="4">Loading registered users…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+    <p class="notice" id="notice" role="alert"></p>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script>
+    const usersBody = document.getElementById('usersBody');
+    const notice = document.getElementById('notice');
+    const searchInput = document.getElementById('searchInput');
+    const toast = document.getElementById('toast');
+    let users = [];
+    let toastTimer;
+
+    function showNotice(message, allowLogin) {
+      notice.replaceChildren(document.createTextNode(message));
+      if (allowLogin) {
+        notice.append(' ');
+        const link = document.createElement('a');
+        link.href = '/login.html';
+        link.textContent = 'Sign in with the admin account';
+        notice.append(link);
+      }
+      notice.style.display = 'block';
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+    }
+
+    function dateLabel(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? 'Unknown' : date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function statusOf(user) {
+      if (user.revoked) return { label: 'Revoked', className: 'revoked' };
+      if (user.accessGranted) return { label: 'Active', className: 'active' };
+      return { label: 'Pending', className: '' };
+    }
+
+    function renderUsers() {
+      const query = searchInput.value.trim().toLowerCase();
+      const visibleUsers = users.filter(user => `${user.name || ''} ${user.email || ''}`.toLowerCase().includes(query));
+      usersBody.replaceChildren();
+      if (!visibleUsers.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 4;
+        cell.className = 'empty';
+        cell.textContent = users.length ? 'No users match your search.' : 'No registered users yet.';
+        row.append(cell);
+        usersBody.append(row);
+        return;
+      }
+
+      for (const user of visibleUsers) {
+        const row = document.createElement('tr');
+        const personCell = document.createElement('td');
+        const person = document.createElement('div');
+        person.className = 'person';
+        const avatar = document.createElement('span');
+        avatar.className = 'avatar';
+        if (user.picture) {
+          const image = document.createElement('img');
+          image.src = user.picture;
+          image.alt = '';
+          image.referrerPolicy = 'no-referrer';
+          avatar.append(image);
+        } else {
+          avatar.textContent = (user.name || user.email || '?').slice(0, 1).toUpperCase();
+        }
+        const identity = document.createElement('div');
+        const name = document.createElement('div');
+        name.className = 'person-name';
+        name.textContent = user.name || 'Unnamed user';
+        const email = document.createElement('div');
+        email.className = 'person-email';
+        email.textContent = user.email || 'No email available';
+        identity.append(name, email);
+        person.append(avatar, identity);
+        personCell.append(person);
+
+        const joinedCell = document.createElement('td');
+        joinedCell.textContent = dateLabel(user.createdAt);
+        const statusCell = document.createElement('td');
+        const status = statusOf(user);
+        const statusLabel = document.createElement('span');
+        statusLabel.className = `status ${status.className}`;
+        statusLabel.textContent = status.label;
+        statusCell.append(statusLabel);
+
+        const actionCell = document.createElement('td');
+        if (user.isAdmin) {
+          const adminLabel = document.createElement('span');
+          adminLabel.className = 'admin-label';
+          adminLabel.textContent = 'Admin account';
+          actionCell.append(adminLabel);
+        } else {
+          const grant = !user.accessGranted || user.revoked;
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = `action ${grant ? 'grant' : ''}`;
+          button.textContent = grant ? 'Grant access' : 'Revoke access';
+          button.addEventListener('click', () => updateAccess(user, grant ? 'grant' : 'revoke', button));
+          actionCell.append(button);
+        }
+        row.append(personCell, joinedCell, statusCell, actionCell);
+        usersBody.append(row);
+      }
+    }
+
+    async function updateAccess(user, action, button) {
+      if (action === 'revoke' && !window.confirm(`Revoke app access for ${user.email}?`)) return;
+      button.disabled = true;
+      try {
+        const response = await fetch(`/api/admin/users/${encodeURIComponent(user.id)}/access`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not update access.');
+        showToast(action === 'grant' ? 'Access granted.' : 'Access revoked.');
+        await loadUsers();
+      } catch (error) {
+        showNotice(error.message || 'Could not update access. Please try again.', false);
+        button.disabled = false;
+      }
+    }
+
+    async function loadUsers() {
+      try {
+        const response = await fetch('/api/admin/users');
+        const data = await response.json();
+        if (response.status === 401) {
+          showNotice('Please sign in to continue.', true);
+          usersBody.replaceChildren();
+          return;
+        }
+        if (response.status === 403) {
+          showNotice('This page is only available to the admin account.', false);
+          usersBody.replaceChildren();
+          return;
+        }
+        if (!response.ok) throw new Error(data.error || 'Unable to load registered users.');
+        notice.style.display = 'none';
+        users = Array.isArray(data.users) ? data.users : [];
+        const active = users.filter(user => user.accessGranted && !user.revoked).length;
+        document.getElementById('totalCount').textContent = String(users.length);
+        document.getElementById('activeCount').textContent = String(active);
+        document.getElementById('pendingCount').textContent = String(users.length - active);
+        renderUsers();
+      } catch (error) {
+        showNotice(error.message || 'Unable to load registered users. Please refresh the page.', false);
+        usersBody.replaceChildren();
+      }
+    }
+
+    searchInput.addEventListener('input', renderUsers);
+    loadUsers();
+  </script>
+</body>
+</html>

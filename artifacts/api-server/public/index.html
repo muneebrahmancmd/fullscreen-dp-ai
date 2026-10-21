@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fullscreen DP AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      background: #000;
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 1rem 2rem;
+    }
+
+    /* Header */
+    .header {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      margin-bottom: 0.5rem;
+    }
+    .admin-link {
+      display: none;
+      color: rgba(255,255,255,0.62);
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      text-decoration: none;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .admin-link:hover { color: #fff; }
+    .user-name {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.03em;
+    }
+    .user-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      object-fit: cover;
+    }
+    .logout-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255,255,255,0.35);
+      display: flex;
+      align-items: center;
+      padding: 4px;
+      border-radius: 6px;
+      transition: color 0.2s;
+      text-decoration: none;
+    }
+    .logout-btn:hover { color: rgba(255,255,255,0.7); }
+
+    /* Screens */
+    .screen { width: 100%; max-width: 380px; display: none; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    /* ===== SCREEN 1 — Landing ===== */
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 0.5px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      padding: 0.35rem 0.85rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 1.25rem;
+    }
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #fff;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    .main-title {
+      font-size: clamp(2rem, 10vw, 3.5rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      text-align: center;
+    }
+    .by-line {
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.25);
+      margin-top: 0.35rem;
+      font-weight: 400;
+    }
+    .main-subtitle {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      line-height: 1.5;
+      margin-top: 0.5rem;
+      max-width: 300px;
+    }
+    .card {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 0.5px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .field-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 0.5rem;
+    }
+    .field-input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 0.5px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.9rem;
+      color: #fff;
+      outline: none;
+    }
+    .field-input::placeholder { color: rgba(255,255,255,0.2); }
+    .field-input:focus { border-color: rgba(255,255,255,0.35); }
+
+    /* Upload zone */
+    .upload-zone {
+      width: 100%;
+      border: 1.5px dashed rgba(255,255,255,0.2);
+      border-radius: 12px;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+      padding: 1rem;
+    }
+    .upload-zone:hover { border-color: rgba(255,255,255,0.4); }
+    .upload-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-default {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    .upload-default svg { opacity: 0.4; }
+    .upload-default span {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.4);
+    }
+    .upload-preview {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      pointer-events: none;
+    }
+    .upload-preview img {
+      max-height: 100px;
+      max-width: 100%;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+    .upload-preview span {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+    }
+
+    .start-btn {
+      width: 100%;
+      background: #fff;
+      color: #000;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.9rem;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .start-btn:hover { opacity: 0.88; }
+    .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .footer-txt {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 2rem;
+    }
+
+    /* ===== SCREEN 2 — Processing ===== */
+    .proc-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 0.75rem;
+    }
+    .pct-num {
+      font-size: clamp(3rem, 16vw, 5rem);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .progress-bar-wrap {
+      width: 100%;
+      max-width: 320px;
+      height: 1px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 999px;
+      margin-top: 1rem;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 1px;
+      background: #fff;
+      width: 0%;
+      transition: width 0.4s ease;
+      border-radius: 999px;
+    }
+    .steps-list {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 1.5rem;
+    }
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.78rem;
+      color: rgba(255,255,255,0.25);
+      transition: color 0.3s;
+    }
+    .step-item.active { color: rgba(255,255,255,1); }
+    .step-item.done { color: rgba(255,255,255,0.85); }
+    .step-circle {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      flex-shrink: 0;
+      transition: all 0.3s;
+    }
+    .step-item.active .step-circle {
+      animation: stepPulse 1.2s ease-in-out infinite;
+    }
+    .step-item.done .step-circle {
+      background: #fff;
+      border-color: #fff;
+      color: #000;
+      font-weight: 700;
+    }
+    @keyframes stepPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5); }
+      50% { box-shadow: 0 0 0 5px rgba(255,255,255,0); }
+    }
+
+    /* Pair code box */
+    .pair-box {
+      display: none;
+      background: rgba(255,255,255,0.04);
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+      max-width: 320px;
+      width: 100%;
+      margin-top: 2rem;
+    }
+    .pair-box-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: rgba(255,255,255,0.3);
+      margin-bottom: 0.5rem;
+    }
+    .pair-code {
+      font-family: 'DM Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+    }
+    .pair-instruction {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.3);
+      margin-top: 0.5rem;
+      line-height: 1.5;
+    }
+
+    /* Error box */
+    .error-box {
+      display: none;
+      border: 0.5px solid rgba(255,80,80,0.4);
+      background: rgba(255,80,80,0.05);
+      border-radius: 10px;
+      padding: 1rem;
+      max-width: 320px;
+      width: 100%;
+      margin-top: 1.5rem;
+    }
+    .error-msg {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: #ff6b6b;
+      line-height: 1.5;
+    }
+    .try-again-btn {
+      margin-top: 0.75rem;
+      background: none;
+      border: 0.5px solid rgba(255,80,80,0.5);
+      border-radius: 8px;
+      padding: 0.5rem 1rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.72rem;
+      color: #ff6b6b;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .try-again-btn:hover { background: rgba(255,80,80,0.1); }
+
+    /* ===== SCREEN 3 — Success ===== */
+    .success-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      animation: scaleIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      transform: scale(0.5);
+      margin-bottom: 1.25rem;
+    }
+    @keyframes scaleIn {
+      to { transform: scale(1); }
+    }
+    .success-title {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .success-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.4);
+      margin-top: 0.4rem;
+      text-align: center;
+    }
+    .success-img {
+      width: 80px;
+      aspect-ratio: 9/16;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.15);
+      object-fit: cover;
+      margin-top: 1.25rem;
+    }
+    .again-btn {
+      margin-top: 1.75rem;
+      background: none;
+      border: 0.5px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 0.7rem 1.5rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.6);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .again-btn:hover { border-color: rgba(255,255,255,0.4); color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <a href="/admin.html" class="admin-link" id="adminLink">Admin</a>
+    <span class="user-name" id="userName"></span>
+    <img class="user-avatar" id="userAvatar" src="" alt="" style="display:none" />
+    <a href="/api/auth/logout" class="logout-btn" title="Logout">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </a>
+  </div>
+
+  <!-- Screen 1: Landing -->
+  <div class="screen active" id="screenLanding">
+    <div class="badge"><span class="badge-dot"></span>AI Powered · v2.0</div>
+    <h1 class="main-title">Fullscreen DP</h1>
+    <p class="by-line">by Muneeb Rehman</p>
+    <p class="main-subtitle">Set your WhatsApp profile picture — full size, no cropping</p>
+
+    <div class="card">
+      <div>
+        <div class="field-label">WhatsApp Number</div>
+        <input
+          class="field-input"
+          id="phoneInput"
+          type="tel"
+          placeholder="+92 300 0000000"
+          inputmode="numeric"
+        />
+      </div>
+      <div>
+        <div class="field-label">Upload Your Photo</div>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" />
+          <div class="upload-default" id="uploadDefault">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 16 12 12 8 16"/>
+              <line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+            </svg>
+            <span>tap to choose image</span>
+          </div>
+          <div class="upload-preview" id="uploadPreview">
+            <img id="previewImg" src="" alt="preview" />
+            <span>image selected ✓</span>
+          </div>
+        </div>
+      </div>
+      <button class="start-btn" id="startBtn">Start Process</button>
+    </div>
+
+    <p class="footer-txt">Powered by Muneeb Rehman</p>
+  </div>
+
+  <!-- Screen 2: Processing -->
+  <div class="screen" id="screenProcessing">
+    <p class="proc-label">Processing</p>
+    <div class="pct-num" id="pctNum">0%</div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+
+    <div class="steps-list" id="stepsList">
+      <div class="step-item" id="step-0">
+        <div class="step-circle">○</div>
+        <span>Waiting for pairing code</span>
+      </div>
+      <div class="step-item" id="step-1">
+        <div class="step-circle">○</div>
+        <span>Establishing WhatsApp connection</span>
+      </div>
+      <div class="step-item" id="step-2">
+        <div class="step-circle">○</div>
+        <span>Syncing WhatsApp data</span>
+      </div>
+      <div class="step-item" id="step-3">
+        <div class="step-circle">○</div>
+        <span>Processing image</span>
+      </div>
+      <div class="step-item" id="step-4">
+        <div class="step-circle">○</div>
+        <span>Setting profile picture</span>
+      </div>
+      <div class="step-item" id="step-5">
+        <div class="step-circle">○</div>
+        <span>Finalizing process</span>
+      </div>
+    </div>
+
+    <div class="pair-box" id="pairBox">
+      <div class="pair-box-label">WhatsApp Pairing Code</div>
+      <div class="pair-code" id="pairCode">----</div>
+      <div class="pair-instruction">Enter this in WhatsApp → Linked Devices</div>
+    </div>
+
+    <div class="error-box" id="errorBox">
+      <div class="error-msg" id="errorMsg">Something went wrong.</div>
+      <button class="try-again-btn" onclick="restart()">Try Again</button>
+    </div>
+  </div>
+
+  <!-- Screen 3: Success -->
+  <div class="screen" id="screenSuccess">
+    <div class="success-circle">✓</div>
+    <h2 class="success-title">Profile Updated</h2>
+    <p class="success-sub">Your fullscreen DP is now live on WhatsApp</p>
+    <img class="success-img" id="successImg" src="" alt="Your DP" />
+    <button class="again-btn" onclick="restart()">↩ Start Again</button>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    const STEP_PERCENTAGES = [12, 30, 48, 65, 85, 100];
+
+    let socketId = null;
+    let uploadedFile = null;
+    let uploadedBase64 = null;
+    let currentPct = 0;
+    let targetPct = 0;
+    let rafId = null;
+
+    const socket = io({ path: '/api/socket.io' });
+    socket.on('connect', () => { socketId = socket.id; });
+
+    // Load user info
+    fetch('/api/me')
+      .then(r => { if (!r.ok) window.location.href = '/login.html'; return r.json(); })
+      .then(user => {
+        document.getElementById('userName').textContent = user.name || user.email || '';
+        const avatar = document.getElementById('userAvatar');
+        if (user.picture) { avatar.src = user.picture; avatar.style.display = 'block'; }
+      })
+      .catch(() => { window.location.href = '/login.html'; });
+
+    fetch('/api/admin/me')
+      .then(r => {
+        if (r.ok) document.getElementById('adminLink').style.display = 'inline-flex';
+      })
+      .catch(() => {});
+
+    // File input
+    document.getElementById('fileInput').addEventListener('change', function() {
+      const file = this.files[0];
+      if (!file) return;
+      uploadedFile = file;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadedBase64 = e.target.result;
+        document.getElementById('previewImg').src = uploadedBase64;
+        document.getElementById('uploadDefault').style.display = 'none';
+        document.getElementById('uploadPreview').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Start button
+    document.getElementById('startBtn').addEventListener('click', async () => {
+      const phone = document.getElementById('phoneInput').value.trim();
+      const cleanPhone = phone.replace(/\D/g, '');
+
+      if (!cleanPhone) {
+        alert('Please enter your WhatsApp number.');
+        return;
+      }
+      if (cleanPhone.length < 10) {
+        alert('Please enter a valid phone number with country code (e.g. 923001234567).');
+        return;
+      }
+      if (!uploadedFile) {
+        alert('Please select an image first.');
+        return;
+      }
+      if (!socketId) {
+        alert('Connecting to server, please try again in a moment.');
+        return;
+      }
+
+      showScreen('screenProcessing');
+      resetSteps();
+
+      const formData = new FormData();
+      formData.append('image', uploadedFile);
+      formData.append('phone', cleanPhone);
+      formData.append('socketId', socketId);
+
+      try {
+        const res = await fetch('/api/start', { method: 'POST', body: formData });
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          showError(d.error || 'Failed to connect. Please try again.');
+        }
+      } catch {
+        showError('Failed to connect. Please try again.');
+      }
+    });
+
+    // Socket events
+    socket.on('step', ({ index, status }) => {
+      updateStep(index, status);
+      if (status === 'done') {
+        animatePct(STEP_PERCENTAGES[index]);
+        if (index === 1) {
+          const pairBox = document.getElementById('pairBox');
+          pairBox.style.transition = 'opacity 0.5s';
+          pairBox.style.opacity = '0';
+          setTimeout(() => { pairBox.style.display = 'none'; }, 500);
+        }
+      } else if (status === 'active') {
+        animatePct(STEP_PERCENTAGES[index] - 5);
+      }
+    });
+
+    socket.on('paircode', ({ code }) => {
+      document.getElementById('pairCode').textContent = code;
+      const pairBox = document.getElementById('pairBox');
+      pairBox.style.display = 'block';
+      pairBox.style.opacity = '1';
+    });
+
+    socket.on('success', () => {
+      animatePct(100, () => {
+        document.getElementById('successImg').src = uploadedBase64 || '';
+        showScreen('screenSuccess');
+      });
+    });
+
+    socket.on('error', ({ message }) => {
+      showError(message || 'Something went wrong.');
+    });
+
+    // Helpers
+    function showScreen(id) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    function resetSteps() {
+      for (let i = 0; i < 6; i++) {
+        const el = document.getElementById(`step-${i}`);
+        el.classList.remove('active', 'done');
+        el.querySelector('.step-circle').textContent = '○';
+      }
+      document.getElementById('pairBox').style.display = 'none';
+      document.getElementById('errorBox').style.display = 'none';
+      currentPct = 0;
+      targetPct = 0;
+      document.getElementById('pctNum').textContent = '0%';
+      document.getElementById('progressFill').style.width = '0%';
+    }
+
+    function updateStep(index, status) {
+      const el = document.getElementById(`step-${index}`);
+      if (!el) return;
+      el.classList.remove('active', 'done');
+      const circle = el.querySelector('.step-circle');
+      if (status === 'active') {
+        el.classList.add('active');
+        circle.textContent = '·';
+      } else if (status === 'done') {
+        el.classList.add('done');
+        circle.textContent = '✓';
+      }
+    }
+
+    function animatePct(target, onComplete) {
+      targetPct = target;
+      if (rafId) cancelAnimationFrame(rafId);
+      function step() {
+        const diff = targetPct - currentPct;
+        if (Math.abs(diff) < 0.5) {
+          currentPct = targetPct;
+          document.getElementById('pctNum').textContent = Math.round(currentPct) + '%';
+          document.getElementById('progressFill').style.width = currentPct + '%';
+          if (onComplete) onComplete();
+          return;
+        }
+        currentPct += diff * 0.08;
+        document.getElementById('pctNum').textContent = Math.round(currentPct) + '%';
+        document.getElementById('progressFill').style.width = currentPct + '%';
+        rafId = requestAnimationFrame(step);
+      }
+      rafId = requestAnimationFrame(step);
+    }
+
+    function showError(msg) {
+      document.getElementById('errorMsg').textContent = msg;
+      document.getElementById('errorBox').style.display = 'block';
+    }
+
+    function restart() {
+      uploadedFile = null;
+      uploadedBase64 = null;
+      document.getElementById('phoneInput').value = '';
+      document.getElementById('fileInput').value = '';
+      document.getElementById('uploadDefault').style.display = 'flex';
+      document.getElementById('uploadPreview').style.display = 'none';
+      resetSteps();
+      showScreen('screenLanding');
+    }
+  </script>
+</body>
+</html>

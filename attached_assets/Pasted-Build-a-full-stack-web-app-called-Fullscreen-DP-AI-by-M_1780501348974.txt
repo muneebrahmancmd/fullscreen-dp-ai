@@ -1,0 +1,315 @@
+Build a full-stack web app called "Fullscreen DP AI" by Muneeb Rehman.
+One try, zero errors, fully working end to end.
+
+═══════════════════════════════
+TECH STACK
+═══════════════════════════════
+- Frontend: Single index.html (all CSS + JS inline)
+- Backend: Node.js + Express
+- WhatsApp: whatsapp-web.js (personal number only, NO Business API)
+- Image Processing: Sharp
+- Real-time: Socket.io
+- File Upload: Multer
+- Auth: Google OAuth via passport.js + passport-google-oauth20
+- Sessions: express-session
+- Database: lowdb (JSON file based, no setup needed)
+
+═══════════════════════════════
+PACKAGE.JSON — USE EXACTLY THIS
+═══════════════════════════════
+{
+  "name": "fullscreen-dp-ai",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "multer": "^1.4.5-lts.1",
+    "passport": "^0.6.0",
+    "passport-google-oauth20": "^2.0.0",
+    "sharp": "^0.32.6",
+    "socket.io": "^4.7.5",
+    "whatsapp-web.js": "^1.23.0",
+    "lowdb": "^1.0.0",
+    "puppeteer": "^21.0.0"
+  }
+}
+
+═══════════════════════════════
+ENVIRONMENT VARIABLES (.env)
+═══════════════════════════════
+Create a .env file:
+PORT=3000
+GOOGLE_CLIENT_ID=YOUR_GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET=YOUR_GOOGLE_CLIENT_SECRET
+SESSION_SECRET=supersecretkey123
+APP_URL=http://localhost:3000
+MASTER_ACCESS_CODE=muneebrahman56
+
+═══════════════════════════════
+DATABASE (db.json — auto created)
+═══════════════════════════════
+Use lowdb with JSON file storage.
+Schema:
+{
+  "users": [],
+  "allowed_emails": []
+}
+
+User object:
+{
+  "id": "google_id",
+  "email": "user@gmail.com",
+  "name": "User Name",
+  "picture": "avatar_url",
+  "approved": false,
+  "accessGranted": false,
+  "createdAt": "timestamp"
+}
+
+═══════════════════════════════
+AUTH SYSTEM — FULL LOGIC
+═══════════════════════════════
+
+STEP 1 — Google Login:
+- User clicks "Login with Google"
+- Google OAuth redirects back
+- User profile saved in db.json with approved: false
+
+STEP 2 — Access Code Gate:
+- After Google login, if user.accessGranted is false:
+  - Show a code entry screen
+  - User must enter the exact code: muneebrahman56
+  - If correct: set user.accessGranted = true in db
+  - If wrong: show error "Invalid access code"
+  - Once approved, they never see this screen again on future logins
+
+STEP 3 — App Access:
+- Only users with accessGranted: true can access the main app
+- All other routes redirect to login
+
+Routes:
+GET  /auth/google           — start Google OAuth
+GET  /auth/google/callback  — OAuth callback
+GET  /auth/logout           — destroy session, redirect to /
+GET  /api/me                — return current user or 401
+POST /api/verify-code       — accept { code }, verify against MASTER_ACCESS_CODE
+GET  /                      — serve index.html (protected, must be logged in + approved)
+
+Middleware: 
+function requireAuth(req, res, next) {
+  if (!req.user) return res.redirect('/login.html');
+  if (!req.user.accessGranted) return res.redirect('/verify.html');
+  next();
+}
+
+═══════════════════════════════
+FRONTEND PAGES — 3 HTML FILES
+═══════════════════════════════
+
+--- login.html ---
+Pure black background.
+Centered card with:
+- "Fullscreen DP AI" heading (Syne font, white, large)
+- "by Muneeb Rehman" muted subtitle
+- Google login button (white pill button with Google icon SVG inline)
+- Footer: "Powered by Muneeb Rehman"
+Link: <a href="/auth/google"> button </a>
+
+--- verify.html ---
+Pure black background.
+Centered card with:
+- Heading: "Enter Access Code"
+- Subtitle: "You need an access code to use this app"
+- Input field (placeholder: "Enter your code")
+- Submit button (white)
+- Error message div (hidden by default, red text)
+- JS: POST to /api/verify-code, on success redirect to /, on fail show error
+- Also show logout link
+
+--- index.html (MAIN APP — PROTECTED) ---
+All CSS and JS inline. No external CSS.
+Fonts from Google: Syne + DM Mono.
+Load socket.io from: https://cdn.socket.io/4.7.5/socket.io.min.js
+Mobile first, max-width 380px centered.
+
+Show logged in user avatar + name in top right corner (fetch from /api/me).
+Show logout icon/link.
+
+3 SCREENS (only one visible, others display:none):
+
+SCREEN 1 — id="screenLanding":
+- Badge: pulsing white dot + "AI Powered · v2.0" (DM Mono, uppercase, pill border)
+- Heading: "Fullscreen DP" (Syne, 800 weight, clamp 2rem-3.5rem)
+- Muted subheading: "by Muneeb Rehman" (white 25% opacity)
+- Subtitle: "Set your WhatsApp profile picture in fullscreen 3:4 mode" (white 40%)
+- Dark card (rgba white 4%, border 0.5px white 10%, border-radius 20px):
+  - Label: "WHATSAPP NUMBER" (DM Mono, 11px, uppercase)
+  - Input: phone number (placeholder: +92 300 0000000, digits only validation)
+  - Label: "UPLOAD YOUR PHOTO"
+  - Upload zone (dashed border, tap to choose, hidden file input covering full area):
+    - Default state: arrow icon + "tap to choose image"
+    - After upload: show image thumbnail (preserve aspect ratio) + "image selected ✓"
+  - Button: "Start Process" (white bg, black text, full width, Syne 700)
+- Footer: "Powered by Muneeb Rehman" (DM Mono, 11px, white 20%)
+
+SCREEN 2 — id="screenProcessing":
+- Label: "PROCESSING" (DM Mono, uppercase, white 35%)
+- Large %: id="pctNum" (Syne 800, clamp 3rem-5rem, tabular-nums)
+- Progress bar: height 1px, white 10% bg, white fill, max-width 320px, transition 0.4s
+- Steps list (DM Mono, 13px, max-width 320px):
+  Step 0: Waiting for pairing code
+  Step 1: Establishing WhatsApp connection
+  Step 2: Syncing WhatsApp data
+  Step 3: Processing image
+  Step 4: Setting profile picture
+  Step 5: Finalizing process
+
+  Each step has circle icon + label:
+  - inactive: white 25%, circle "○"
+  - active: white, circle pulses with box-shadow keyframe, shows "·"
+  - done: white, circle filled white, black "✓" text inside
+
+- Pairing code box id="pairBox" (hidden by default):
+  - bg rgba white 4%, border, border-radius 12px, padding, centered, max-width 320px, margin-top 2rem
+  - Label: "WHATSAPP PAIRING CODE" (DM Mono, 10px, uppercase, white 30%)
+  - Code id="pairCode" (DM Mono, 2rem, weight 700, letter-spacing 0.25em)
+  - Instruction: "Enter this in WhatsApp → Linked Devices" (11px, white 30%)
+  - Hide after step 1 done
+
+- Error box id="errorBox" (display:none by default):
+  - border 0.5px red 40%, background red 5%, border-radius 10px, padding 1rem
+  - Red text showing error message
+  - "Try Again" button (ghost red style) that calls restart()
+
+SCREEN 3 — id="screenSuccess":
+- Animated circle checkmark (80px, border white 20%, scale animation from 0.5 to 1)
+- "Profile Updated" (Syne, 1.5rem, 800)
+- "Your fullscreen DP is now live on WhatsApp" (DM Mono, 13px, white 40%)
+- id="successImg": show uploaded image preview (80px wide, 3:4 ratio, rounded, border)
+- "↩ Start Again" ghost button (transparent, border white 15%, DM Mono)
+
+JAVASCRIPT in index.html:
+- On load: fetch /api/me, show user avatar + name in header, if 401 redirect to /login.html
+- socketId variable, set on socket 'connect' event
+- Store uploaded file object + base64 preview in memory
+- On file input change: read as DataURL, store, show preview in upload zone
+- On "Start Process":
+  - Validate phone (not empty, digits + country code)
+  - Validate image selected
+  - Switch to screenProcessing
+  - POST /start as FormData: { image: file, phone: cleanedPhone, socketId }
+  - If fetch fails: show errorBox "Failed to connect. Please try again."
+- Socket events:
+  - 'step' { index, status }: update step icon + class, update progress %
+    percentages per step: [12, 30, 48, 65, 85, 100]
+    Animate % with requestAnimationFrame smoothly
+  - 'paircode' { code }: show pairBox, set pairCode innerHTML to code
+  - step index 1 done: hide pairBox with fade
+  - 'success': switch to screenSuccess, set successImg.src to stored base64
+  - 'error' { message }: show errorBox with message
+- restart(): reset everything, clear inputs, reset steps, switch to screenLanding
+- Logout link calls /auth/logout
+
+═══════════════════════════════
+SERVER.JS — FULL BACKEND
+═══════════════════════════════
+
+Requirements:
+- Load dotenv at top
+- Use express-session with SESSION_SECRET
+- Use passport with GoogleStrategy
+- Use lowdb with db.json
+- Multer stores to /uploads folder (create if not exists)
+- Sharp processes image
+- Socket.io on same http server
+- whatsapp-web.js with puppeteer args for server environment
+
+Puppeteer args (REQUIRED for Replit/Linux):
+args: [
+  '--no-sandbox',
+  '--disable-setuid-sandbox',
+  '--disable-dev-shm-usage',
+  '--disable-accelerated-2d-canvas',
+  '--no-first-run',
+  '--no-zygote',
+  '--single-process',
+  '--disable-gpu'
+]
+
+WhatsApp flow in POST /start:
+1. Clean phone number: remove all non-digits
+2. Emit step 0 active
+3. Initialize WhatsApp client with LocalAuth + puppeteer args
+4. Call client.initialize()
+5. Call client.requestPairingCode(phone) — MUST be called after initialize()
+6. Emit paircode event with the code
+7. Wait for 'ready' event (timeout 120 seconds, reject on timeout or auth_failure)
+8. Emit step 1 done
+9. await delay(800)
+10. Emit step 2 done
+11. Process image with Sharp:
+    - Resize to 1080x1440 fit:'contain' background black
+    - Save to uploads/processed_timestamp.jpg
+12. Emit step 3 done
+13. Set profile picture: const media = MessageMedia.fromFilePath(processedPath)
+    await client.setProfilePicture(media)
+14. Emit step 4 done
+15. await delay(1000)
+16. Emit step 5 done
+17. await delay(600)
+18. Emit success
+19. Send WhatsApp message to self (owner's number):
+    await client.sendMessage(phone + '@c.us', '🤖 Fullscreen DP AI: Bot connected and profile picture updated successfully! Bot is now disconnecting.')
+20. await client.destroy()
+21. Delete both image files (original + processed)
+
+Error handling:
+- Wrap entire flow in try/catch
+- On error: emit 'error' { message: err.message }
+- Destroy client if exists
+- Delete uploaded files
+
+IMPORTANT:
+- res.json({ success: true }) BEFORE starting async WhatsApp process
+- The WhatsApp process runs in background after response sent
+- Use let activeClient = null to track and destroy previous sessions
+
+═══════════════════════════════
+FOLDER STRUCTURE
+═══════════════════════════════
+/project
+  server.js
+  package.json
+  .env
+  db.json (auto created)
+  /public
+    index.html
+    login.html
+    verify.html
+  /uploads (auto created)
+  /.wwebjs_auth (auto created by whatsapp-web.js)
+
+═══════════════════════════════
+CRITICAL RULES — DO NOT SKIP
+═══════════════════════════════
+1. requestPairingCode() must be called AFTER client.initialize() resolves
+2. Phone number must be digits only: 923001234567 format (no +, no spaces, no dashes)
+3. Image must use Sharp fit:'contain' with black background — NEVER crop or stretch
+4. After success: client.destroy() must be called to unlink from WhatsApp
+5. Socket events must use io.to(socketId).emit() — NOT io.emit()
+6. All puppeteer args must be included or it will crash on Replit
+7. Use lowdb version 1.0.0 (CommonJS) — NOT v3+ (ESM only)
+8. express-session must come before passport.initialize()
+9. Google OAuth callback URL must match exactly: APP_URL + /auth/google/callback
+10. Access code comparison must be exact string match: code === process.env.MASTER_ACCESS_CODE
+11. All 3 HTML files must be in /public folder
+12. requireAuth middleware on GET / route
+13. socket.io CDN: https://cdn.socket.io/4.7.5/socket.io.min.js
+14. No TypeScript, no React, no build step — plain Node.js only
+15. node server.js must start everything with zero errors
+
+START COMMAND: node server.js
+APP URL: http://localhost:3000

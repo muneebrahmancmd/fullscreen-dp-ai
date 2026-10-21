@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Fullscreen DP AI"
+version = "1.0.0"
+id = "artifacts/fullscreen-dp"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25386
+
+[services.development]
+run = "pnpm --filter @workspace/fullscreen-dp run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/fullscreen-dp", "run", "build" ]
+publicDir = "artifacts/fullscreen-dp/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25386"
+BASE_PATH = "/"

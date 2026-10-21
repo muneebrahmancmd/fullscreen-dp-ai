@@ -1,0 +1,2 @@
+- [OpenAPI file uploads](openapi-file-uploads.md) — Orval binary multipart schemas can add browser `File`/`Blob` types to Node-only generated packages.
+- [Access-change email behavior](access-change-emails.md) — Persist permission changes first; send notifications asynchronously only when the user's access state changes.
